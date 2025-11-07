@@ -89,6 +89,7 @@ a simple service manager for ROBLOX script builders
          [razvan_init / 2nd_example.service] >> hi, razvan_init
   [ OK ] [razvan_init] >> 2nd_example.service successfully started in 0.0012182931832943590 seconds
   ```
+- services will start depending on how they're ordered in the `init.config` script. for example, if `example.service` is on the first index of the `services` configuration entry and `2nd_example.service` is on the second index, `example.service` will always start first.
 
 ## FAQ
 ### why do script builders need a service manager?
