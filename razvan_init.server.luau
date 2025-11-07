@@ -256,7 +256,7 @@ task_spawn(function(...)
 							})
 						)
 
-						return output.info("global variables have been removed from", service_name)
+						return output.ok("global variables have been removed from", service_name)
 					end, orig_service_env)
 
 					local success, result = pcall(function(...)
