@@ -20,7 +20,6 @@ a simple service manager for ROBLOX script builders
   return {
   	services = {
   		["example.service"] = {
-  			service_name = "example.service",
   			args = {"hi", "these are", "arguments"}
   		}
   	}
@@ -29,6 +28,7 @@ a simple service manager for ROBLOX script builders
 
   ```luau
   -- example.service
+  --!nolint DeprecatedApi
 
   return function(...)
     local output = getfenv().output
@@ -44,6 +44,50 @@ a simple service manager for ROBLOX script builders
          [razvan_init] >> starting example.service...
          [razvan_init / example.service] >> hi these are arguments
   [ OK ] [razvan_init] >> example.service successfully started in 0.00154329019021349 seconds
+  ```
+- modules can be put inside the `modules` folder. the service manager will expose the `modules` folder to every service through the function environment (as mentioned earlier)
+  ```luau
+  -- example.module
+
+  return {
+    greet = function(name)
+        return "hi "..name
+    end
+  }
+  ```
+
+  ```luau
+  -- init.config
+
+  return {
+  	services = {
+  		["2nd_example.service"] = {
+  			args = {}
+  		}
+  	}
+  }
+  ```
+
+  ```luau
+  -- 2nd_example.service
+  --!nolint DeprecatedApi
+
+  return function(...)
+    local modules = getfenv().modules
+    local output = getfenv().output
+    local example_module = require(modules['example.module'])
+
+    pcall(getfenv().remove_global_vars)
+    return output.info(example_module.greet("razvan_init")
+  end
+  ```
+
+  example output:
+
+  ```
+         [razvan_init] >> starting 2nd_example.service...
+         [razvan_init / 2nd_example.service] >> hi, razvan_init
+  [ OK ] [razvan_init] >> 2nd_example.service successfully started in 0.0012182931832943590 seconds
   ```
 
 ## FAQ
