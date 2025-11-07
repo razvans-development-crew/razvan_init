@@ -64,7 +64,7 @@ a simple, fast service manager for ROBLOX script builders
   return {
     services = {
       {
-        service_name = "2nd_example_service",
+        service_name = "2nd_example.service",
         args = {}
       }
     }
