@@ -90,6 +90,8 @@ a simple service manager for ROBLOX script builders
   [ OK ] [razvan_init] >> 2nd_example.service successfully started in 0.0012182931832943590 seconds
   ```
 - services will start depending on how they're ordered in the `init.config` script. for example, if `example.service` is on the first index of the `services` configuration entry and `2nd_example.service` is on the second index, `example.service` will always start first.
+- the service manager will remove access to the global variables (`modules`, `config` and so on) after 5 seconds if they havent been removed yet.
+- you can share objects or data across services using the `internal_service_storage` table. basically, it acts as `_G`, difference being that its only public to the services.
 
 ## FAQ
 ### why do script builders need a service manager?
