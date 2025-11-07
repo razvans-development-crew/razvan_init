@@ -7,5 +7,5 @@ return function(...)
   local example_module = require(modules['example.module'])
 
   pcall(getfenv().remove_global_vars)
-  return output.info(example_module.greet("razvan_init")
+  return output.info(example_module.greet("razvan_init"))
 end
