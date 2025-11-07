@@ -14,10 +14,23 @@ local setfenv = setfenv
 local next = next
 local tick = tick
 local require = require
+local typeof = typeof
+local pcall = pcall
+local ipairs = ipairs
+local setmetatable = setmetatable
 local game = game or workspace.Parent
 
+local print = print
+local warn = warn
+
 local task = task
+local table = table
+local string = string
+
 local task_spawn = task.spawn
+local task_wait = task.wait
+local table_unpack = table.unpack
+local string_gsub = string.gsub
 
 local players = game:GetService('Players');
 local run_service = game:GetService('RunService');
@@ -37,10 +50,9 @@ local CONSOLE_OUTPUT_PREFIXES = {
 	info = "         [razvan_init] >>",
 }
 
-local output
-do
-	output = {}
+local output = {}
 
+do
 	function output.ok(...)
 		print(CONSOLE_OUTPUT_PREFIXES.ok, ...)
 	end
@@ -58,17 +70,19 @@ do
 	end
 end
 
-local utils
-do
-	utils = {}
+local utils = {}
 
+do
 	function utils.shutdown_server(reason)
 		local start = tick()
 		output.warning("server is being forcibly shut down:", reason)
 
 		for _, player in next, players:GetPlayers() do
 			output.info("(shutdown) kicking player:", player.Name)
-			player:Kick("[razvan_init] server is being forcibly shut down. reason: " .. reason)
+			player:Kick(
+				"[razvan_init] server is being forcibly shut down. reason: " 
+				.. reason
+			)
 		end
 
 		players.PlayerAdded:Connect(function(player)
@@ -123,7 +137,7 @@ local internal_service_storage = setmetatable({}, {
 	__metatable = "The metatable is locked",
 })
 
-task.spawn(function()
+task_spawn(function()
 	print([[                                  
                                                      _       _ _   
                  _ __ __ _ ______   ____ _ _ __     (_)_ __ (_) |_ 
@@ -134,7 +148,7 @@ task.spawn(function()
 	warn("================================================================================")
 end)
 
-task.spawn(function()
+task_spawn(function()
 	if not config then
 		return output.fail("startup failed: config folder is non-existent"),
 			utils.shutdown_server("NON_EXISTENT_CONFIG_FOLDER")
@@ -176,7 +190,7 @@ task.spawn(function()
 	if not pcall(http.GetAsync, "https://google.com") then
 		return output.warning("HttpService is disabled, please enable it through the game's settings.")
 	end
-	
+
 	if not utils.check_signal_behavior() then
 		return output.warning("signal behavior is not deferred.")
 	end
@@ -184,10 +198,10 @@ task.spawn(function()
 	return nil
 end)
 
-task.spawn(function()
+task_spawn(function()
 	-- for the sake of preventing indexing of the main script
 
-	-- also done before the anti-tamper is initialized so that 
+	-- also done before the anti-tamper is initialized so that
 	-- the service manager doesnt triger its own anti tamper
 	config.Parent = nil
 	modules.Parent = nil
@@ -205,7 +219,7 @@ task.spawn(function()
 end)
 
 task_spawn(function(...)
-	for service_index, service_entry in next, init_config.services do
+	for service_index, service_entry in ipairs(init_config.services) do
 		-- reiterating over the services config instead of the services folder in order to support a priority system
 		local service_entry_name = service_entry.service_name
 		local service = services:FindFirstChild(service_entry_name)
@@ -218,7 +232,7 @@ task_spawn(function(...)
 					local start = tick()
 
 					local service_name = (function()
-						return string.gsub(service.Name, "service", "") .. "service"
+						return string_gsub(service.Name, "service", "") .. "service"
 					end)()
 
 					local service_init_config = service_entry
@@ -290,7 +304,7 @@ task_spawn(function(...)
 								end,
 								__metatable = "The metatable is locked",
 							})
-						)(table.unpack(service_init_config.args))
+						)(table_unpack(service_init_config.args))
 					end)
 
 					if not success then
@@ -298,14 +312,14 @@ task_spawn(function(...)
 						return utils.shutdown_server("SERVICE_START_FAILED")
 					end
 
-					task.spawn(function() 
+					task_spawn(function()
 						-- it may be possible for the global variables to not have been removed
 						-- after the service has been started, so wait for 5 seconds to check
 						-- the existence of the variables and remove them
 
-						task.wait(5)
-						
-						if 
+						task_wait(5)
+
+						if
 							getfenv(service_executable).service_name == service_name
 							or getfenv(service_executable).service_name == service.Name
 							or getfenv(service_executable).modules == modules
@@ -315,12 +329,21 @@ task_spawn(function(...)
 							or getfenv(service_executable).internal_service_storage == internal_service_storage
 							or getfenv(service_executable).remove_global_vars == remove_global_vars
 						then
-							output.warning("global variables have not been removed from", service_name, "within the timeframe of 5 seconds, removing...")
+							output.warning(
+								"global variables have not been removed from",
+								service_name,
+								"within the timeframe of 5 seconds, removing..."
+							)
 
 							local success, result = pcall(remove_global_vars)
 
 							if not success then
-								output.fail("failed to remove global variables from", service_name, "with error:", result)
+								output.fail(
+									"failed to remove global variables from",
+									service_name,
+									"with error:",
+									result
+								)
 								return utils.shutdown_server("SERVICE_START_FAILED (FAILED_GLOBAL_VAR_REMOVAL)")
 							end
 						end
@@ -337,7 +360,7 @@ task_spawn(function(...)
 	return nil
 end)
 
-task.spawn(function()
+task_spawn(function()
 	game:BindToClose(function(close_reason)
 		local start = tick()
 		output.warning("server is being closed with reason:", close_reason)
