@@ -319,7 +319,7 @@ task_spawn(function(...)
 							or getfenv(service_executable).internal_service_storage == internal_service_storage
 							or getfenv(service_executable).remove_global_vars == remove_global_vars
 						then
-							output.warning("global variables have not been removed from", service_name, ", removing...")
+							output.warning("global variables have not been removed from", service_name..",", "removing...")
 
 							local success, result = pcall(remove_global_vars)
 
