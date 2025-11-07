@@ -2,10 +2,12 @@
 
 return {
   services = {
-    ["example.service"] = {
+    {
+	  service_name = "example.service",
       args = {"hi", "these are", "arguments"}
     },
-	["2nd_example.service"] = {
+	{
+	  service_name = "2nd_example.service",
       args = {}
     }
   }
