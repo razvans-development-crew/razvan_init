@@ -1,10 +1,12 @@
 -- init.config (without the .luau suffix)
 
 return {
-	services = {
-		["example.service"] = {
-			service_name = "example.service",
-			args = {"hi", "these are", "arguments"}
-		}
-	}
+  services = {
+    ["example.service"] = {
+      args = {"hi", "these are", "arguments"}
+    },
+		["2nd_example.service"] = {
+      args = {}
+    }
+  }
 }
