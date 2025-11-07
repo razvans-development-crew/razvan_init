@@ -169,16 +169,16 @@ task.spawn(function()
 		return output.warning("loadstring is disabled, please enable it through ServerScriptService.LoadstringEnabled.")
 	end
 
-	if not pcall(http.GetAsync, "https://google.com") then
-		return output.warning("HttpService is disabled, please enable it through the game's settings.")
-	end
-
 	if not utils.check_signal_behavior() then
 		return output.warning("signal behavior is not deferred.")
 	end
 
 	if run_service:IsStudio() then
 		return output.warning("server is running in studio")
+	end
+
+	if not pcall(http.GetAsync, "https://google.com") then
+		return output.warning("HttpService is disabled, please enable it through the game's settings.")
 	end
 
 	return nil
@@ -215,7 +215,7 @@ task_spawn(function(...)
 					service.Parent = nil -- to prevent indexing of the service manager's main script
 
 					local start = tick()
-					
+
 					local service_name = (function()
 						return string.gsub(service.Name, "service", "") .. "service"
 					end)()
@@ -223,7 +223,8 @@ task_spawn(function(...)
 					local service_init_config = init_config.services[service.Name] or init_config.services[service_name]
 
 					if not service_init_config then
-						return output.warning(service_name, "will not be started because it is missing an init config")
+						output.warning(service_name, "will not be started because it is missing an init config")
+						continue
 					end
 
 					output.info("starting", service_name .. "...")
@@ -232,10 +233,12 @@ task_spawn(function(...)
 					local orig_service_env = getfenv(service_executable)
 
 					if typeof(service_executable) ~= "function" then
-						return output.warning(
+						output.warning(
 							service_name,
 							"will not be started because it does not return an executable function"
 						)
+
+						continue
 					end
 
 					table.insert(running_services, {
@@ -297,7 +300,7 @@ task_spawn(function(...)
 						return utils.shutdown_server("SERVICE_START_FAILED")
 					end
 
-					return output.ok(service_name, "successfully started in", tick() - start, "seconds")
+					output.ok(service_name, "successfully started in", tick() - start, "seconds")
 				end
 			end
 		end
