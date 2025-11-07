@@ -247,6 +247,18 @@ task_spawn(function(...)
 						service_object = service,
 					})
 
+					local remove_global_vars = setfenv(function()
+						setfenv(
+							service_executable,
+							setmetatable({}, {
+								__index = getfenv(0),
+								__metatable = "The metatable is locked",
+							})
+						)
+
+						return output.info("global variables have been removed from", service_name)
+					end, orig_service_env)
+
 					local success, result = pcall(function(...)
 						return setfenv(
 							service_executable,
@@ -270,17 +282,7 @@ task_spawn(function(...)
 								utils = utils,
 								service_name = service_name,
 								internal_service_storage = internal_service_storage,
-								remove_global_vars = setfenv(function()
-									setfenv(
-										service_executable,
-										setmetatable({}, {
-											__index = getfenv(0),
-											__metatable = "The metatable is locked",
-										})
-									)
-
-									return output.info("global variables have been removed from", service_name)
-								end, orig_service_env),
+								remove_global_vars = remove_global_vars,
 								args = { ... },
 							}, {
 								__index = function(self, key)
@@ -299,6 +301,36 @@ task_spawn(function(...)
 						output.fail("failed to start", service_name, "with error:", result)
 						return utils.shutdown_server("SERVICE_START_FAILED")
 					end
+
+					task.spawn(function() 
+						-- it may be possible for the global variables to not have been removed
+						-- after the service has been started, so wait for 5 seconds to check
+						-- the existence of the variables and remove them
+
+						task.wait(5)
+						
+						if 
+							getfenv(service_executable).service_name == service_name
+							or getfenv(service_executable).service_name == service.Name
+							or getfenv(service_executable).modules == modules
+							or getfenv(service_executable).config == config
+							or getfenv(service_executable).output == output
+							or getfenv(service_executable).utils == utils
+							or getfenv(service_executable).internal_service_storage == internal_service_storage
+							or getfenv(service_executable).remove_global_vars == remove_global_vars
+						then
+							output.warning("global variables have not been removed from", service_name, ", removing...")
+
+							local success, result = pcall(remove_global_vars)
+
+							if not success then
+								output.fail("failed to remove global variables from", service_name, "with error:", result)
+								return utils.shutdown_server("SERVICE_START_FAILED (FAILED_GLOBAL_VAR_REMOVAL)")
+							end
+						end
+
+						return nil
+					end)
 
 					output.ok(service_name, "successfully started in", tick() - start, "seconds")
 				end
