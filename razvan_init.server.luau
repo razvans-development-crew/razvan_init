@@ -169,16 +169,16 @@ task.spawn(function()
 		return output.warning("loadstring is disabled, please enable it through ServerScriptService.LoadstringEnabled.")
 	end
 
-	if not utils.check_signal_behavior() then
-		return output.warning("signal behavior is not deferred.")
-	end
-
 	if run_service:IsStudio() then
 		return output.warning("server is running in studio")
 	end
 
 	if not pcall(http.GetAsync, "https://google.com") then
 		return output.warning("HttpService is disabled, please enable it through the game's settings.")
+	end
+	
+	if not utils.check_signal_behavior() then
+		return output.warning("signal behavior is not deferred.")
 	end
 
 	return nil
@@ -211,7 +211,7 @@ task_spawn(function(...)
 		local service = services:FindFirstChild(service_entry_name)
 
 		if service then
-			if typeof(service) == "Instance" then -- might be unnecessary to include this check since im calling the GetChildren API method, which only returns instances
+			if typeof(service) == "Instance" then
 				if service:IsA("ModuleScript") then
 					service.Parent = nil -- to prevent indexing of the service manager's main script
 
