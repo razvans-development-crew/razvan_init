@@ -191,84 +191,89 @@ task.spawn(function()
 end)
 
 task_spawn(function(...) 
-	for _, service in next, services:GetChildren() do
-		if typeof(service) == "Instance" then -- might be unnecessary to include this check since im calling the GetChildren API method, which only returns instances
-			if service:IsA("ModuleScript") then
-				task.spawn(function() 
-					service.Parent = nil
+	for service_name, service_entry in next, init_config.services do
+		-- reiterating over the services config instead of the services folder in order to support a priority system
+		local service = services:FindFirstChild(service_name)
 
-					local start = tick()
-					local service_name = (function() return string.gsub(service.Name, "service", "") .. "service" end)()
-					local service_init_config = init_config.services[service.Name] or init_config.services[service_name]
+		if service then
+			if typeof(service) == "Instance" then -- might be unnecessary to include this check since im calling the GetChildren API method, which only returns instances
+				if service:IsA("ModuleScript") then
+					task.spawn(function() 
+						service.Parent = nil
 
-					if not service_init_config then
-						return output.warning(service_name, "will not be started because it is missing an init config")
-					end
+						local start = tick()
+						local service_name = (function() return string.gsub(service.Name, "service", "") .. "service" end)()
+						local service_init_config = init_config.services[service.Name] or init_config.services[service_name]
 
-					output.info("starting", service_name.."...")
+						if not service_init_config then
+							return output.warning(service_name, "will not be started because it is missing an init config")
+						end
 
-					local service_executable = require(service)
-					local orig_service_env = getfenv(service_executable)
+						output.info("starting", service_name.."...")
 
-					if typeof(service_executable) ~= "function" then
-						return output.warning(service_name, "will not be started because it does not return an executable function")
-					end
+						local service_executable = require(service)
+						local orig_service_env = getfenv(service_executable)
 
-					table.insert(running_services, {
-						service_name = service_name, 
-						service_executable = service_executable,
-						service_object = service
-					})
+						if typeof(service_executable) ~= "function" then
+							return output.warning(service_name, "will not be started because it does not return an executable function")
+						end
 
-					local success, result = pcall(function(...) 
-						return setfenv(service_executable, setmetatable({
-							modules = modules,
-							config = config,
-							output = {
-								ok = setfenv(function(...) 
-									print("[  OK  ] [razvan_init / "..service_name.."] >>", ...)
+						table.insert(running_services, {
+							service_name = service_name, 
+							service_executable = service_executable,
+							service_object = service
+						})
+
+						local success, result = pcall(function(...) 
+							return setfenv(service_executable, setmetatable({
+								modules = modules,
+								config = config,
+								output = {
+									ok = setfenv(function(...) 
+										print("[  OK  ] [razvan_init / "..service_name.."] >>", ...)
+									end, orig_service_env),
+									warning = setfenv(function(...) 
+										warn("[ WARN ] [razvan_init / "..service_name.."] >>", ...)
+									end, orig_service_env),
+									fail = setfenv(function(...) 
+										warn("[ FAIL ] [razvan_init / "..service_name.."] >>", ...)
+									end, orig_service_env),
+									info = setfenv(function(...) 
+										print("         [razvan_init / "..service_name.."] >>", ...)
+									end, orig_service_env)
+								},
+								utils = utils,
+								service_name = service_name,
+								internal_service_storage = internal_service_storage,
+								remove_global_vars = setfenv(function() 
+									setfenv(service_executable, setmetatable({}, {
+										__index = getfenv(0),
+										__metatable = "The metatable is locked"
+									}))
+
+									return output.info("global variables have been removed from", service_name)
 								end, orig_service_env),
-								warning = setfenv(function(...) 
-									warn("[ WARN ] [razvan_init / "..service_name.."] >>", ...)
-								end, orig_service_env),
-								fail = setfenv(function(...) 
-									warn("[ FAIL ] [razvan_init / "..service_name.."] >>", ...)
-								end, orig_service_env),
-								info = setfenv(function(...) 
-									print("         [razvan_init / "..service_name.."] >>", ...)
-								end, orig_service_env)
-							},
-							utils = utils,
-							service_name = service_name,
-							internal_service_storage = internal_service_storage,
-							remove_global_vars = setfenv(function() 
-								setfenv(service_executable, setmetatable({}, {
-									__index = getfenv(0),
-									__metatable = "The metatable is locked"
-								}))
+								args = {...}
+							}, {
+								__index = function(self, key) 
+									if key == "script" then
+										return nil
+									end
 
-								return output.info("global variables have been removed from", service_name)
-							end, orig_service_env),
-							args = {...}
-						}, {
-							__index = function(self, key) 
-								if key == "script" then
-									return nil
-								end
+									return orig_service_env[key]
+								end,
+								__metatable = "The metatable is locked"
+							}))(table.unpack(service_init_config.args))
+						end)
 
-								return orig_service_env[key]
-							end,
-							__metatable = "The metatable is locked"
-						}))(table.unpack(service_init_config.args))
+						if not success then
+							output.fail("failed to start", service_name, "with error:", result)
+							return utils.shutdown_server("SERVICE_START_FAILED")
+						end
+
+						return output.ok(service_name, "successfully started in", tick() - start, "seconds")
 					end)
-
-					if not success then
-						output.fail("failed to start", service_name, "with error:", result)
-						return utils.shutdown_server("SERVICE_START_FAILED")
-					end
-
-					return output.ok(service_name, "successfully started in", tick() - start, "seconds")
-				end)
+				end
 			end
 		end
 	end
