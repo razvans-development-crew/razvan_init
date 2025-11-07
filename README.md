@@ -41,9 +41,10 @@ a simple service manager for ROBLOX script builders
   example output:
   
   ```
-         [razvan_init] >> starting example.service...
-         [razvan_init / example.service] >> hi these are arguments
-  [ OK ] [razvan_init] >> example.service successfully started in 0.00154329019021349 seconds
+  20:11:08.407           [razvan_init] >> starting example.service...  -  Server
+  20:11:08.407  [  OK  ] [razvan_init] >> global variables have been removed from example.service  -  Server
+  20:11:08.407           [razvan_init / example.service] >> hi these are arguments  -  Server
+  20:11:08.408  [  OK  ] [razvan_init] >> example.service successfully started in 0.0013179779052734375 seconds  -  Server
   ```
 - modules can be put inside the `modules` folder. the service manager will expose the `modules` folder to every service through the function environment (as mentioned earlier)
   ```luau
@@ -85,12 +86,25 @@ a simple service manager for ROBLOX script builders
   example output:
 
   ```
-         [razvan_init] >> starting 2nd_example.service...
-         [razvan_init / 2nd_example.service] >> hi, razvan_init
-  [ OK ] [razvan_init] >> 2nd_example.service successfully started in 0.0012182931832943590 seconds
+  20:11:08.405           [razvan_init] >> starting 2nd_example.service...  -  Server
+  20:11:08.405  [  OK  ] [razvan_init] >> global variables have been removed from 2nd_example.service  -  Server
+  20:11:08.406           [razvan_init / 2nd_example.service] >> hi razvan_init  -  Server
+  20:11:08.406  [  OK  ] [razvan_init] >> 2nd_example.service successfully started in 0.0014750957489013672 seconds  -  Server
   ```
 - services will start depending on how they're ordered in the `init.config` script. for example, if `example.service` is on the first index of the `services` configuration entry and `2nd_example.service` is on the second index, `example.service` will always start first.
 - the service manager will remove access to the global variables (`modules`, `config` and so on) after 5 seconds if they havent been removed yet.
+  ```
+  20:07:51.117           [razvan_init] >> starting 2nd_example.service...  -  Server
+  20:07:51.119           [razvan_init / 2nd_example.service] >> hi razvan_init  -  Server
+  20:07:51.120  [  OK  ] [razvan_init] >> 2nd_example.service successfully started in 0.003445863723754883 seconds  -  Server
+  20:07:51.120           [razvan_init] >> starting example.service...  -  Server
+  20:07:51.121  [  OK  ] [razvan_init] >> global variables have been removed from example.service  -  Server
+  20:07:51.121           [razvan_init / example.service] >> hi these are arguments  -  Server
+  20:07:51.122  [  OK  ] [razvan_init] >> example.service successfully started in 0.0014312267303466797 seconds  -  Server
+  20:07:51.122  [  OK  ] [razvan_init] >> finished startup to hand over control to services in 0.007096052169799805 seconds  -  Server
+  20:07:56.148  [ WARN ] [razvan_init] >> global variables have not been removed from 2nd_example.service within the timeframe of 5 seconds, removing...  -  Server
+  20:07:56.148  [  OK  ] [razvan_init] >> global variables have been removed from 2nd_example.service  -  Server
+  ```
 - you can share objects or data across services using the `internal_service_storage` table. basically, it acts as `_G`, difference being that its only public to the services.
 
 ## FAQ
