@@ -207,7 +207,8 @@ end)
 task_spawn(function(...)
 	for service_index, service_entry in next, init_config.services do
 		-- reiterating over the services config instead of the services folder in order to support a priority system
-		local service = services:FindFirstChild(service_index)
+		local service_entry_name = service_entry.service_name
+		local service = services:FindFirstChild(service_entry_name)
 
 		if service then
 			if typeof(service) == "Instance" then -- might be unnecessary to include this check since im calling the GetChildren API method, which only returns instances
@@ -220,12 +221,7 @@ task_spawn(function(...)
 						return string.gsub(service.Name, "service", "") .. "service"
 					end)()
 
-					local service_init_config = init_config.services[service.Name] or init_config.services[service_name]
-
-					if not service_init_config then
-						output.warning(service_name, "will not be started because it is missing an init config")
-						continue
-					end
+					local service_init_config = service_entry
 
 					output.info("starting", service_name .. "...")
 
@@ -319,7 +315,7 @@ task_spawn(function(...)
 							or getfenv(service_executable).internal_service_storage == internal_service_storage
 							or getfenv(service_executable).remove_global_vars == remove_global_vars
 						then
-							output.warning("global variables have not been removed from", service_name..",", "removing...")
+							output.warning("global variables have not been removed from", service_name, "within the timeframe of 5 seconds, removing...")
 
 							local success, result = pcall(remove_global_vars)
 
