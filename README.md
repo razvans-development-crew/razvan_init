@@ -1,5 +1,5 @@
 # razvan_init
-a simple service manager for ROBLOX script builders
+a simple, fast service manager for ROBLOX script builders
 
 ## usage
 1. create a server script in `ServerScriptService`, name could be `init` or `razvan_init` for example.
