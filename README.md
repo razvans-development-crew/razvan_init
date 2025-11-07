@@ -18,11 +18,11 @@ a simple service manager for ROBLOX script builders
   -- init.config
   
   return {
-  	services = {
-  		["example.service"] = {
-  			args = {"hi", "these are", "arguments"}
-  		}
-  	}
+    services = {
+      ["example.service"] = {
+        args = {"hi", "these are", "arguments"}
+      }
+    }
   }
   ```
 
@@ -60,11 +60,11 @@ a simple service manager for ROBLOX script builders
   -- init.config
 
   return {
-  	services = {
-  		["2nd_example.service"] = {
-  			args = {}
-  		}
-  	}
+    services = {
+      ["2nd_example.service"] = {
+        args = {}
+      }
+    }
   }
   ```
 
