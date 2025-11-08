@@ -16,8 +16,8 @@ local tick = tick
 local require = require
 local typeof = typeof
 local pcall = pcall
-local ipairs = ipairs
 local setmetatable = setmetatable
+local loadstring = loadstring
 local game = game or workspace.Parent
 
 local print = print
@@ -79,10 +79,7 @@ do
 
 		for _, player in next, players:GetPlayers() do
 			output.info("(shutdown) kicking player:", player.Name)
-			player:Kick(
-				"[razvan_init] server is being forcibly shut down. reason: " 
-				.. reason
-			)
+			player:Kick("[razvan_init] server is being forcibly shut down. reason: " .. reason)
 		end
 
 		players.PlayerAdded:Connect(function(player)
@@ -95,7 +92,9 @@ do
 		end)
 
 		output.info("(shutdown) stopping services...")
-		for _, service in ipairs(running_services) do
+		for service_index = 1, #running_services do
+			local service = running_services[service_index]
+
 			local service_name, _service_executable, service_object =
 				service.service_name, service.service_executable, service.service_object
 
@@ -104,9 +103,10 @@ do
 
 			if not success then
 				output.fail("(shutdown) failed to stop", service_name, "with error:", result)
-			else
-				output.ok("(shutdown) successfully stopped", service_name)
+				continue
 			end
+
+			output.ok("(shutdown) successfully stopped", service_name)
 		end
 
 		return output.ok("finished shutdown in", tick() - start, "seconds")
@@ -187,7 +187,7 @@ task_spawn(function()
 		return output.warning("server is running in studio")
 	end
 
-	if not pcall(http.GetAsync, "https://google.com") then
+	if not http.HttpEnabled then
 		return output.warning("HttpService is disabled, please enable it through the game's settings.")
 	end
 
@@ -219,142 +219,141 @@ task_spawn(function()
 end)
 
 task_spawn(function(...)
-	for service_index, service_entry in ipairs(init_config.services) do
+	for service_index = 1, #init_config.services do
 		-- reiterating over the services config instead of the services folder in order to support a priority system
+		local service_entry = init_config.services[service_index]
 		local service_entry_name = service_entry.service_name
 		local service = services:FindFirstChild(service_entry_name)
 
-		if service then
-			if typeof(service) == "Instance" then
-				if service:IsA("ModuleScript") then
-					service.Parent = nil -- to prevent indexing of the service manager's main script
+		if not service then
+			continue
+		end
 
-					local start = tick()
+		if typeof(service) ~= "Instance" then
+			continue
+		end
 
-					local service_name = (function()
-						return string_gsub(service.Name, "service", "") .. "service"
-					end)()
+		if not service:IsA("ModuleScript") then
+			continue
+		end
 
-					local service_init_config = service_entry
+		service.Parent = nil -- to prevent indexing of the service manager's main script
 
-					output.info("starting", service_name .. "...")
+		
+		local service_name = (function()
+			return string_gsub(service.Name, "service", "") .. "service"
+		end)()
 
-					local service_executable = require(service)
-					local orig_service_env = getfenv(service_executable)
+		local service_init_config = service_entry
 
-					if typeof(service_executable) ~= "function" then
-						output.warning(
-							service_name,
-							"will not be started because it does not return an executable function"
-						)
+		local start = tick()
+		output.info("starting", service_name .. "...")
+		
+		local service_executable = require(service)
+		local orig_service_env = getfenv(service_executable)
 
-						continue
-					end
+		if typeof(service_executable) ~= "function" then
+			output.warning(service_name, "will not be started because it does not return an executable function")
 
-					table.insert(running_services, {
-						service_name = service_name,
-						service_executable = service_executable,
-						service_object = service,
-					})
+			continue
+		end
 
-					local remove_global_vars = setfenv(function()
-						setfenv(
-							service_executable,
-							setmetatable({}, {
-								__index = getfenv(0),
-								__metatable = "The metatable is locked",
-							})
-						)
+		table.insert(running_services, {
+			service_name = service_name,
+			service_executable = service_executable,
+			service_object = service,
+		})
 
-						return output.ok("global variables have been removed from", service_name)
-					end, orig_service_env)
+		local remove_global_vars = setfenv(function()
+			setfenv(
+				service_executable,
+				setmetatable({}, {
+					__index = getfenv(0),
+					__metatable = "The metatable is locked",
+				})
+			)
 
-					local success, result = pcall(function(...)
-						return setfenv(
-							service_executable,
-							setmetatable({
-								modules = modules,
-								config = config,
-								output = {
-									ok = setfenv(function(...)
-										print("[  OK  ] [razvan_init / " .. service_name .. "] >>", ...)
-									end, orig_service_env),
-									warning = setfenv(function(...)
-										warn("[ WARN ] [razvan_init / " .. service_name .. "] >>", ...)
-									end, orig_service_env),
-									fail = setfenv(function(...)
-										warn("[ FAIL ] [razvan_init / " .. service_name .. "] >>", ...)
-									end, orig_service_env),
-									info = setfenv(function(...)
-										print("         [razvan_init / " .. service_name .. "] >>", ...)
-									end, orig_service_env),
-								},
-								utils = utils,
-								service_name = service_name,
-								internal_service_storage = internal_service_storage,
-								remove_global_vars = remove_global_vars,
-								args = { ... },
-							}, {
-								__index = function(self, key)
-									if key == "script" then
-										return nil
-									end
+			return output.ok("global variables have been removed from", service_name)
+		end, orig_service_env)
 
-									return orig_service_env[key]
-								end,
-								__metatable = "The metatable is locked",
-							})
-						)(table_unpack(service_init_config.args))
-					end)
-
-					if not success then
-						output.fail("failed to start", service_name, "with error:", result)
-						return utils.shutdown_server("SERVICE_START_FAILED")
-					end
-
-					task_spawn(function()
-						-- it may be possible for the global variables to not have been removed
-						-- after the service has been started, so wait for 5 seconds to check
-						-- the existence of the variables and remove them
-
-						task_wait(5)
-
-						if
-							getfenv(service_executable).service_name == service_name
-							or getfenv(service_executable).service_name == service.Name
-							or getfenv(service_executable).modules == modules
-							or getfenv(service_executable).config == config
-							or getfenv(service_executable).output == output
-							or getfenv(service_executable).utils == utils
-							or getfenv(service_executable).internal_service_storage == internal_service_storage
-							or getfenv(service_executable).remove_global_vars == remove_global_vars
-						then
-							output.warning(
-								"global variables have not been removed from",
-								service_name,
-								"within the timeframe of 5 seconds, removing..."
-							)
-
-							local success, result = pcall(remove_global_vars)
-
-							if not success then
-								output.fail(
-									"failed to remove global variables from",
-									service_name,
-									"with error:",
-									result
-								)
-								return utils.shutdown_server("SERVICE_START_FAILED (FAILED_GLOBAL_VAR_REMOVAL)")
-							end
+		local success, result = pcall(function(...)
+			return setfenv(
+				service_executable,
+				setmetatable({
+					modules = modules,
+					config = config,
+					output = {
+						ok = setfenv(function(...)
+							print("[  OK  ] [razvan_init / " .. service_name .. "] >>", ...)
+						end, orig_service_env),
+						warning = setfenv(function(...)
+							warn("[ WARN ] [razvan_init / " .. service_name .. "] >>", ...)
+						end, orig_service_env),
+						fail = setfenv(function(...)
+							warn("[ FAIL ] [razvan_init / " .. service_name .. "] >>", ...)
+						end, orig_service_env),
+						info = setfenv(function(...)
+							print("         [razvan_init / " .. service_name .. "] >>", ...)
+						end, orig_service_env),
+					},
+					utils = utils,
+					service_name = service_name,
+					internal_service_storage = internal_service_storage,
+					remove_global_vars = remove_global_vars,
+					args = { ... },
+				}, {
+					__index = function(self, key)
+						if key == "script" then
+							return nil
 						end
 
-						return nil
-					end)
+						return orig_service_env[key]
+					end,
+					__metatable = "The metatable is locked",
+				})
+			)(table_unpack(service_init_config.args))
+		end)
 
-					output.ok(service_name, "successfully started in", tick() - start, "seconds")
+		if not success then
+			output.fail("failed to start", service_name, "with error:", result)
+			return utils.shutdown_server("SERVICE_START_FAILED")
+		end
+
+		task_spawn(function()
+			-- it may be possible for the global variables to not have been removed
+			-- after the service has been started, so wait for 5 seconds to check
+			-- the existence of the variables and remove them
+
+			task_wait(5)
+
+			if
+				getfenv(service_executable).service_name == service_name
+				or getfenv(service_executable).service_name == service.Name
+				or getfenv(service_executable).modules == modules
+				or getfenv(service_executable).config == config
+				or getfenv(service_executable).output == output
+				or getfenv(service_executable).utils == utils
+				or getfenv(service_executable).internal_service_storage == internal_service_storage
+				or getfenv(service_executable).remove_global_vars == remove_global_vars
+			then
+				output.warning(
+					"global variables have not been removed from",
+					service_name,
+					"within the timeframe of 5 seconds, removing..."
+				)
+
+				local success, result = pcall(remove_global_vars)
+
+				if not success then
+					output.fail("failed to remove global variables from", service_name, "with error:", result)
+					return utils.shutdown_server("SERVICE_START_FAILED (FAILED_GLOBAL_VAR_REMOVAL)")
 				end
 			end
-		end
+
+			return nil
+		end)
+
+		output.ok(service_name, "successfully started in", tick() - start, "seconds")
 	end
 
 	return nil
@@ -366,7 +365,8 @@ task_spawn(function()
 		output.warning("server is being closed with reason:", close_reason)
 
 		output.info("(shutdown) stopping services...")
-		for _, service in ipairs(running_services) do
+		for service_index = 1, #running_services do
+			local service = running_services[service_index]
 			local service_name, _service_executable, service_object =
 				service.service_name, service.service_executable, service.service_object
 
@@ -375,9 +375,10 @@ task_spawn(function()
 
 			if not success then
 				output.fail("(shutdown) failed to stop", service_name, "with error:", result)
-			else
-				output.ok("(shutdown) successfully stopped", service_name)
+				continue
 			end
+
+			output.ok("(shutdown) successfully stopped", service_name)
 		end
 
 		return output.ok("finished service shutdown in", tick() - start, "seconds")
