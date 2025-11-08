@@ -5,7 +5,7 @@ a simple, fast service manager for ROBLOX script builders
 1. create a server script in `ServerScriptService`, name could be `init` or `razvan_init` for example.
 2. paste the contents of the `razvan_init.server.luau` script (which is located in this repository) into the script you just created.
 3. the service manager expects the folders `services`, `modules` and `config` to be inside of the script. the service manager will shut down the server if they do not exist.
-4. the service manager also expects a `ModuleScript` with the name of `init.config` to be inside of the `config` folder. the service manager will shut down the server if it does not exist, because it holds the configuration for the service manager and for the services themselves.
+4. the service manager also expects a `ModuleScript` with the name of `init.config` to be inside of the `config` folder that returns a table. the service manager will shut down the server if it does not exist and if the configuration is invalid, because it holds the configuration for the service manager and for the services themselves.
 5. the service manager will automatically `require` `ModuleScripts` that are inside of the `services` folder and parent them to `nil` (which is a security precaution to prevent indexing of the main script). access to the `modules` and `config` folder will also be exposed to every service. if the service manager does not find configuration for a service, the service will not be ran.
 
 ## recommendations
