@@ -109,7 +109,7 @@ a simple, fast, asynchronous service manager for ROBLOX script builders
   20:07:56.148  [  OK  ] [razvan_init] >> global variables have been removed from 2nd_example.service  -  Server
   ```
 - you can share objects or data across services using the `internal_service_storage` table. basically, it acts as `_G`, difference being that its only public to the services.
-- you can also share objects that need to be instantiated before runtime in the `registry` folder.
+- you can also share objects that need to be instantiated before runtime across every service in the `registry` folder.
 
 ## FAQ
 ### why do script builders need a service manager?
