@@ -38,6 +38,7 @@ local http = game:GetService('HttpService');
 local services = script:FindFirstChild("services")
 local modules = script:FindFirstChild("modules")
 local config = script:FindFirstChild("config")
+local registry = script:FindFirstChild("registry")
 
 local init_config = require(config:FindFirstChild("init.config"))
 
@@ -176,6 +177,11 @@ task_spawn(function()
 			utils.shutdown_server("NON_EXISTENT_SERVICES_FOLDER")
 	end
 
+	if not registry then
+		return output.fail("startup failed: registry folder is non-existent"),
+			utils.shutdown_server("NON_EXISTENT_REGISTRY_FOLDER")
+	end
+
 	if not pcall(loadstring, "return 1") then
 		output.warning("loadstring is disabled, please enable it through ServerScriptService.LoadstringEnabled.")
 	end
@@ -203,6 +209,7 @@ task_spawn(function()
 	config.Parent = nil
 	modules.Parent = nil
 	services.Parent = nil
+	registry.Parent = nil
 
 	local function anti_tamper_callback()
 		return output.warning("init has been tampered with, shutting down"),
@@ -279,6 +286,7 @@ task_spawn(function(...)
 				setmetatable({
 					modules = modules,
 					config = config,
+					registry = registry,
 					output = {
 						ok = setfenv(function(...)
 							print("[  OK  ] [razvan_init / " .. service_name .. "] >>", ...)
