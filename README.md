@@ -10,6 +10,7 @@ a simple, fast service manager for ROBLOX script builders
 
 ## recommendations
 - because the service manager exposes access to variables (such as `internal_service_storage`, `modules`, `config`, `output` and `utils`) through the function environment (usually retrieved through using `getfenv()`), it is strongly recommended to localize the variables you need, then remove them from the function environment. the service manager exposes a function (`remove_global_vars`) that removes access to the variables in the function environment so that you dont have to inline the same exact code into every service. this is required if you impose strict restrictions on script execution.
+- it is absolutely not recommended to add or remove any object to the script during runtime. this'll trigger the anti tamper and result in an immediate server shutdown.
 
 ## tips
 - in case you need to pass arguments to a service, change up the `args` value in the service's configuration entry in the `init.config` script. below is an example:
