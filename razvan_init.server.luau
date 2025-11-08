@@ -11,7 +11,6 @@ local INIT_START = tick()
 local script = script
 local getfenv = getfenv
 local setfenv = setfenv
-local next = next
 local tick = tick
 local require = require
 local typeof = typeof
@@ -77,7 +76,7 @@ do
 		local start = tick()
 		output.warning("server is being forcibly shut down:", reason)
 
-		for _, player in next, players:GetPlayers() do
+		for _, player in players:GetPlayers() do
 			output.info("(shutdown) kicking player:", player.Name)
 			player:Kick("[razvan_init] server is being forcibly shut down. reason: " .. reason)
 		end
@@ -92,9 +91,7 @@ do
 		end)
 
 		output.info("(shutdown) stopping services...")
-		for service_index = 1, #running_services do
-			local service = running_services[service_index]
-
+		for _, service in running_services do
 			local service_name, _service_executable, service_object =
 				service.service_name, service.service_executable, service.service_object
 
@@ -219,9 +216,8 @@ task_spawn(function()
 end)
 
 task_spawn(function(...)
-	for service_index = 1, #init_config.services do
+	for service_index, service_entry in init_config.services do
 		-- reiterating over the services config instead of the services folder in order to support a priority system
-		local service_entry = init_config.services[service_index]
 		local service_entry_name = service_entry.service_name
 		local service = services:FindFirstChild(service_entry_name)
 
@@ -367,8 +363,7 @@ task_spawn(function()
 		output.warning("server is being closed with reason:", close_reason)
 
 		output.info("(shutdown) stopping services...")
-		for service_index = 1, #running_services do
-			local service = running_services[service_index]
+		for _, service in running_services do
 			local service_name, _service_executable, service_object =
 				service.service_name, service.service_executable, service.service_object
 
