@@ -43,6 +43,7 @@ local registry = script:FindFirstChild("registry")
 local init_config = require(config:FindFirstChild("init.config"))
 
 local running_services = {}
+local stopped = false
 local CONSOLE_OUTPUT_PREFIXES = {
 	ok = "[  OK  ] [razvan_init] >>",
 	warning = "[ WARN ] [razvan_init] >>",
@@ -75,6 +76,8 @@ local utils = {}
 do
 	function utils.shutdown_server(reason)
 		local start = tick()
+
+		stopped = true
 		output.warning("server is being forcibly shut down:", reason)
 
 		for _, player in players:GetPlayers() do
@@ -206,10 +209,10 @@ task_spawn(function()
 
 	-- also done before the anti-tamper is initialized so that
 	-- the service manager doesnt triger its own anti tamper
-	config.Parent = nil
-	modules.Parent = nil
-	services.Parent = nil
-	registry.Parent = nil
+	if config then config.Parent = nil end
+	if modules then modules.Parent = nil end
+	if services then services.Parent = nil end	
+	if registry then registry.Parent = nil end
 
 	local function anti_tamper_callback()
 		return output.warning("init has been tampered with, shutting down"),
@@ -227,6 +230,10 @@ task_spawn(function(...)
 		-- reiterating over the services config instead of the services folder in order to support a priority system
 		local service_entry_name = service_entry.service_name
 		local service = services:FindFirstChild(service_entry_name)
+
+		if stopped then
+			return output.warning(service_entry_name, "will not be started because the server is shutting down")
+		end
 
 		if not service then
 			output.warning(service_entry_name, "will not be started becuase it does not exist in the services folder")
@@ -367,6 +374,8 @@ end)
 task_spawn(function()
 	game:BindToClose(function(close_reason)
 		local start = tick()
+
+		stopped = true
 		output.warning("server is being closed with reason:", close_reason)
 
 		output.info("(shutdown) stopping services...")
