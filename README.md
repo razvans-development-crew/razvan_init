@@ -6,10 +6,10 @@ a simple, fast, asynchronous service manager for ROBLOX script builders
 2. paste the contents of the `razvan_init.server.luau` script (which is located in this repository) into the script you just created.
 3. the service manager expects the folders `services`, `modules` and `config` to be inside of the script. the service manager will shut down the server if they do not exist.
 4. the service manager also expects a `ModuleScript` with the name of `init.config` to be inside of the `config` folder that returns a table. the service manager will shut down the server if it does not exist and if the configuration is invalid, because it holds the configuration for the service manager and for the services themselves.
-5. the service manager will automatically `require` `ModuleScripts` that are inside of the `services` folder and parent them to `nil` (which is a security precaution to prevent indexing of the main script). access to the `modules` and `config` folder will also be exposed to every service. if the service manager does not find configuration for a service, the service will not be ran.
+5. the service manager will automatically `require` `ModuleScripts` that are inside of the `services` folder and parent them to `nil` (which is a security precaution to prevent indexing of the main script). access to the `modules`, `regitry` and `config` folders will also be exposed to every service. if the service manager does not find configuration for a service, the service will not be ran.
 
 ## recommendations
-- because the service manager exposes access to variables (such as `internal_service_storage`, `modules`, `config`, `output` and `utils`) through the function environment (usually retrieved through using `getfenv()`), it is strongly recommended to localize the variables you need, then remove them from the function environment. the service manager exposes a function (`remove_global_vars`) that removes access to the variables in the function environment so that you dont have to inline the same exact code into every service. this is required if you impose strict restrictions on script execution.
+- because the service manager exposes access to variables (such as `internal_service_storage`, `modules`, `config`, `registry`, `output` and `utils`) through the function environment (usually retrieved through using `getfenv()`), it is strongly recommended to localize the variables you need, then remove them from the function environment. the service manager exposes a function (`remove_global_vars`) that removes access to the variables in the function environment so that you dont have to inline the same exact code into every service. this is required if you impose strict restrictions on script execution.
 - it is absolutely not recommended to add or remove any object to the script during runtime. this'll trigger the anti tamper and result in an immediate server shutdown.
 
 ## tips
@@ -109,6 +109,7 @@ a simple, fast, asynchronous service manager for ROBLOX script builders
   20:07:56.148  [  OK  ] [razvan_init] >> global variables have been removed from 2nd_example.service  -  Server
   ```
 - you can share objects or data across services using the `internal_service_storage` table. basically, it acts as `_G`, difference being that its only public to the services.
+- you can also share objects that need to be instantiated before runtime in the `registry` folder.
 
 ## FAQ
 ### why do script builders need a service manager?
