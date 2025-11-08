@@ -231,13 +231,12 @@ task_spawn(function(...)
 		end
 
 		if not service:IsA("ModuleScript") then
-			output.warning(service_entry_name, "will not be started becuase it is not a ModuleScript")
+			output.warning(service.Name, "will not be started becuase it is not a ModuleScript")
 			continue
 		end
 
 		service.Parent = nil -- to prevent indexing of the service manager's main script
 
-		
 		local service_name = (function()
 			return string_gsub(service.Name, "service", "") .. "service"
 		end)()
