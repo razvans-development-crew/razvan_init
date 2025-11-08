@@ -226,6 +226,7 @@ task_spawn(function(...)
 		local service = services:FindFirstChild(service_entry_name)
 
 		if not service then
+			output.warning(service_entry_name, "will not be started becuase it does not exist in the services folder")
 			continue
 		end
 
@@ -234,6 +235,7 @@ task_spawn(function(...)
 		end
 
 		if not service:IsA("ModuleScript") then
+			output.warning(service_entry_name, "will not be started becuase it is not a ModuleScript")
 			continue
 		end
 
