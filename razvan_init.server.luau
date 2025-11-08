@@ -177,19 +177,19 @@ task_spawn(function()
 	end
 
 	if not pcall(loadstring, "return 1") then
-		return output.warning("loadstring is disabled, please enable it through ServerScriptService.LoadstringEnabled.")
+		output.warning("loadstring is disabled, please enable it through ServerScriptService.LoadstringEnabled.")
 	end
 
 	if run_service:IsStudio() then
-		return output.warning("server is running in studio")
+		output.warning("server is running in studio")
 	end
 
 	if not http.HttpEnabled then
-		return output.warning("HttpService is disabled, please enable it through the game's settings.")
+		output.warning("HttpService is disabled, please enable it through the game's settings.")
 	end
 
 	if not utils.check_signal_behavior() then
-		return output.warning("signal behavior is not deferred.")
+		output.warning("signal behavior is not deferred.")
 	end
 
 	return nil
