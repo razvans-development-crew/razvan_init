@@ -232,15 +232,12 @@ task_spawn(function(...)
 		local service = services:FindFirstChild(service_entry_name)
 
 		if stopped then
-			return output.warning(service_entry_name, "will not be started because the server is shutting down")
+			output.warning(service_entry_name, "will not be started because the server is being forcibly shutting down")
+			continue
 		end
 
 		if not service then
 			output.warning(service_entry_name, "will not be started becuase it does not exist in the services folder")
-			continue
-		end
-
-		if typeof(service) ~= "Instance" then
 			continue
 		end
 
